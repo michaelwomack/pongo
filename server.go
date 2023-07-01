@@ -82,7 +82,6 @@ func (s *Server) handleNewGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(s.games) > 100 {
-		log.Printf("too many games in progress\n")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(toMessageBytes("too many games in progress"))
 		return
@@ -95,12 +94,12 @@ func (s *Server) handleNewGame(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Printf("failed to read request body: %v\n", err)
+		log.Printf("failed to read request body: %v\n", err)
 		return
 	}
 
 	if err := json.Unmarshal(b, &body); err != nil {
-		fmt.Printf("error unmarshalling body %s: %s\n", b, err)
+		log.Printf("error unmarshalling body %s: %s\n", b, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

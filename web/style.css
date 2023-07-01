@@ -80,6 +80,8 @@ form {
 }
 
 .error-label {
+    height: 10px;
+    text-align: center;
     font-family: var(--system-font);
     font-weight: lighter;
     color: var(--hot-pink);

@@ -185,6 +185,13 @@ socket.addEventListener("close", function(event){
     console.log("socket close: ", event);
 });
 
+const routeToHome = (delayMs = 5000) => {
+    setInterval(() => {
+        window.location.search = "";
+        window.location.pathname = "/";
+    }, delayMs);
+}
+
 socket.addEventListener("message",  function(event){
     const data = JSON.parse(event.data);
     switch (data.type) {
@@ -195,22 +202,22 @@ socket.addEventListener("message",  function(event){
                 isLeft: data.me.isLeft,
                 paddle: new Paddle(data.me.paddle),
             };
-            console.log(`${data.me.id} connected...`);
             break;
         case GAME_START_COUNTDOWN:
             state.gameStartCountdown = data.counter;
             break;
         case OPPONENT_DISCONNECTED:
             state.opponentDisconnected = true;
-            setInterval(() => {
-                window.location.search = "";
-                window.location.pathname = "/";
-            }, 5000);
+            routeToHome();
             break;
         case GAME_STATE:
             const { collision, secondsRemaining, me, opponent, ball, streak } = data.state;
             if (collision) {
                 bounce.play();
+            }
+
+            if (secondsRemaining === 0) {
+                routeToHome(10000);
             }
 
             state.streak = streak;

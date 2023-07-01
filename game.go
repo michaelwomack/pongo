@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,10 +39,6 @@ func (b *Ball) increaseSpeed() {
 	} else if b.Dx > 0 {
 		b.Dx++
 	}
-}
-
-func (b *Ball) diameter() int {
-	return b.Radius * 2
 }
 
 func (b *Ball) update() {
@@ -81,13 +76,10 @@ func (p *Paddle) update(game *Game) {
 	if p == nil {
 		return
 	}
-
 	p.Y += p.Dy
-
 	if p.Y <= paddleWallPadding {
 		p.Y = paddleWallPadding
 	}
-
 	if p.Y+p.Height > game.Height-paddleWallPadding {
 		p.Y = game.Height - p.Height - paddleWallPadding
 	}
@@ -96,7 +88,6 @@ func (p *Paddle) update(game *Game) {
 type Client struct {
 	conn     *websocket.Conn
 	outbound chan []byte // data pushed to this client
-	mu       sync.Mutex
 	exit     chan struct{}
 	Id       uuid.UUID `json:"id"`
 	Paddle   *Paddle   `json:"paddle"`
@@ -109,7 +100,6 @@ func NewClient() *Client {
 		Id:       uuid.New(),
 		conn:     nil,
 		outbound: make(chan []byte),
-		mu:       sync.Mutex{},
 		exit:     make(chan struct{}),
 		Paddle:   nil,
 	}
