@@ -162,7 +162,7 @@ func (c *Client) push(msg any) {
 	c.pushBytes(b)
 }
 
-// pull consumes this byte data from the client. We won't
+// read consumes this byte data from the client. We won't
 // worry about this for now.
 func (c *Client) read(ctx context.Context) {
 	log.Printf("client %s is reading...\n", c.Id)
@@ -180,6 +180,7 @@ func (c *Client) read(ctx context.Context) {
 
 type Game struct {
 	Id        uuid.UUID
+	Code      string
 	Width     int
 	Height    int
 	Player1   *Client
@@ -192,9 +193,10 @@ type Game struct {
 	EndedAt   *time.Time
 }
 
-func NewGame() *Game {
+func NewGame(code string) *Game {
 	return &Game{
 		Id:     uuid.New(),
+		Code:   code,
 		Width:  gameWidth,
 		Height: gameHeight,
 		Ball: &Ball{

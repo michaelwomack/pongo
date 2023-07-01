@@ -55,7 +55,7 @@ class Ball {
         this.y = y;
         this.dx = dx;
         this.dy = dy;
-        this.color = "red";
+        this.color = "#a103fc";
         this.radius = radius;
     }
 
@@ -171,7 +171,7 @@ document.addEventListener("keyup", function (event) {
 
 const params = new URLSearchParams(window.location.search);
 const scheme = window.location.host.startsWith("localhost") ? "ws" : "wss";
-const socket = new WebSocket(`${scheme}://${window.location.host}/ws?id=${params.get("id")}`);
+const socket = new WebSocket(`${scheme}://${window.location.host}/ws?code=${params.get("code")}`);
 
 socket.addEventListener("open", function(event){
     console.log("socket opened: ", event);

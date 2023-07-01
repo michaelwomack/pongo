@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 
-	"github.com/google/uuid"
 	"nhooyr.io/websocket"
 )
 
@@ -20,7 +21,7 @@ import (
 var web embed.FS
 
 type Server struct {
-	games        map[uuid.UUID]*Game
+	games        map[string]*Game
 	gamesMu      sync.Mutex
 	mux          *http.ServeMux
 	gameTemplate *template.Template
@@ -29,7 +30,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		gameTemplate: template.Must(template.ParseFS(web, "web/*.html")),
-		games:        make(map[uuid.UUID]*Game),
+		games:        make(map[string]*Game),
 		mux:          http.NewServeMux(),
 	}
 }
@@ -54,42 +55,82 @@ func (s *Server) run() {
 }
 
 func (s *Server) handleNewGame(w http.ResponseWriter, r *http.Request) {
+	type response struct {
+		Message string `json:"message"`
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	toMessageBytes := func(message string) []byte {
+		b, err := json.Marshal(response{Message: message})
+		if err != nil {
+			log.Printf("error marshalling %s", message)
+		}
+		return b
+	}
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	for _, game := range s.games {
 		if game.EndedAt != nil {
 			s.gamesMu.Lock()
-			delete(s.games, game.Id)
+			delete(s.games, game.Code)
 			s.gamesMu.Unlock()
 		}
 	}
 
-	if len(s.games) > 1000 {
-		log.Printf("too many games in progress")
+	if len(s.games) > 100 {
+		log.Printf("too many games in progress\n")
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte("too many games in progress"))
+		w.Write(toMessageBytes("too many games in progress"))
 		return
 	}
 
-	game := NewGame()
+	var body struct {
+		Code string `json:"code"`
+	}
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("failed to read request body: %v\n", err)
+		return
+	}
+
+	if err := json.Unmarshal(b, &body); err != nil {
+		fmt.Printf("error unmarshalling body %s: %s\n", b, err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if body.Code == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(toMessageBytes("missing game code"))
+		return
+	}
+
+	if _, ok := s.games[body.Code]; ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(toMessageBytes(fmt.Sprintf("'%s' is already taken. Try another.", body.Code)))
+		return
+	}
+
+	game := NewGame(body.Code)
 	s.gamesMu.Lock()
-	s.games[game.Id] = game
+	s.games[game.Code] = game
 	s.gamesMu.Unlock()
-	redirectUrl := "/game?id=" + game.Id.String()
-	log.Printf("created game %s...\n", game.Id)
-	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
+	log.Printf("created game %s with id %s...\n", game.Code, game.Id)
 }
 
 func (s *Server) getGameFromRequest(r *http.Request) (*Game, error) {
-	idParam := r.URL.Query().Get("id")
-	if idParam == "" {
-		return nil, errors.New("id param is missing")
+	gameCode := r.URL.Query().Get("code")
+	if gameCode == "" {
+		return nil, errors.New("game code param is missing")
 	}
 
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		return nil, fmt.Errorf("invalid id %s: %w", idParam, err)
-	}
-
-	game, ok := s.games[id]
+	game, ok := s.games[gameCode]
 	if !ok {
 		return nil, errors.New("game doesn't exist")
 	}
@@ -104,11 +145,11 @@ func (s *Server) handleGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data = struct {
-		GameId uuid.UUID
-		Error  error
+		GameCode string
+		Error    error
 	}{
-		GameId: game.Id,
-		Error:  err,
+		GameCode: game.Code,
+		Error:    err,
 	}
 	if err := s.gameTemplate.Execute(w, data); err != nil {
 		log.Printf("failed to execute game %s page: %s\n", game.Id, err)

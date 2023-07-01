@@ -1,0 +1,94 @@
+:root {
+    --purple: #a103fc;
+    --light-purple: #bc50fa;
+    --hot-pink: #fc19d3;
+    --system-font: system-ui;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    background-color: black;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    position: fixed;
+    top: 60%;
+    height: 180px;
+}
+
+.btn-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.game-btn {
+    width: 120px;
+    height: 60px;
+    border-radius: 30px;
+    background-color: var(--purple);
+    border-color: var(--purple);
+    color: white;
+    font-weight: lighter;
+    font-size: large;
+    align-self: center;
+    transition: 0.2s;
+    font-family: var(--system-font);
+}
+
+.game-btn:hover:enabled {
+    transition: 0.2s;
+    background-color: var(--light-purple);
+    border-color: var(--light-purple);
+    cursor: pointer;
+}
+
+.game-code-input {
+    transition: 0.5s;
+    padding: 15px;
+    border-radius: 7px;
+    border: medium solid white;
+    width: 250px;
+    font-family: var(--system-font);
+    font-size: 25px;
+    font-weight: lighter;
+    text-transform: lowercase;
+    color: var(--purple);
+}
+
+.game-code-input:focus {
+    transition: 0.5s;
+    border-style: solid;
+    border: medium solid var(--light-purple);
+}
+
+.game-code-input::placeholder {
+    color: var(--light-purple)
+}
+
+.game-code-input:focus::placeholder {
+    opacity: 0;
+}
+
+.game-code-input:focus {
+    transition: 0.5s;
+    border-color: var(--purple);
+    outline: none;
+}
+
+.error-label {
+    font-family: var(--system-font);
+    font-weight: lighter;
+    color: var(--hot-pink);
+}
+
+.title {
+    font-size: 64px;
+    font-weight: bold;
+    color: white;
+    position: relative;
+    top: 100px;
+}

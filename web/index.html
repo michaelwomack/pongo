@@ -3,12 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <title>Pongo</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body style="display: flex; justify-content: center; background-color: black;">
-    <div>
-        <form action="/game/new" method="POST" style="align-items: center">
-            <button type="submit">New Game</button>
-        </form>
-    </div>
+<body>
+    <h1 class="title">pongo</h1>
+    <form>
+        <label class="error-label"></label>
+        <input
+            class="game-code-input"
+            type="text"
+            id="game-code"
+            name="game-code"
+            placeholder="enter game code"
+            required
+        />
+        <div class="btn-row">
+            <button class="game-btn" type="button">new game</button>
+            <button class="game-btn" type="button">join game</button>
+        </div>
+    </form>
+    <script>
+        window.onload = function () {
+            const gameCodeInput = document.querySelector("#game-code");
+            gameCodeInput.value = "";
+
+            const [newGameBtn, joinGameBtn] = document.querySelectorAll(".game-btn");
+            newGameBtn.disabled = gameCodeInput.value === "";
+            joinGameBtn.disabled = gameCodeInput.value === "";
+
+            const errorLabel = document.querySelector(".error-label");
+
+            gameCodeInput.addEventListener("input", function (event) {
+                const slugified = event.target.value
+                    .replace(/[^A-Za-z0-9\s\-]/, "")
+                    .replace(" ", "-")
+                    .replace("--", "-")
+                    .substring(0, 20);
+
+                gameCodeInput.value = slugified;
+                newGameBtn.disabled = gameCodeInput.value === "";
+                joinGameBtn.disabled = gameCodeInput.value === "";
+            });
+
+            newGameBtn.onclick = async function (event) {
+                const code = gameCodeInput.value;
+                const response = await fetch("/game/new", {
+                    method: "POST",
+                    body: JSON.stringify({ code }),
+                    headers: {
+                        "Content-Type": "application/json",
+                    }
+                });
+
+                switch (response.status) {
+                    case 400:
+                        const { message } = await response.json();
+                        errorLabel.innerText = message;
+                        setInterval(() => {
+                            errorLabel.innerText = "";
+                        }, 5000);
+                        break;
+                    case 200:
+                        window.location.href = `/game?code=${code}`;
+                }
+            }
+
+            joinGameBtn.onclick = function (event) {
+                window.location.href = `/game?code=${gameCodeInput.value}`;
+            }
+        }
+    </script>
 </body>
 </html>
